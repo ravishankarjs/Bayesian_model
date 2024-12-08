@@ -1,0 +1,303 @@
+
+
+
+```{r}
+# Load the data
+the.fulldata <- as.matrix(read.csv("MelbAirportSolarData.csv", header = TRUE, sep = ","))
+
+# Generate a sample of 5,000 data
+my.data <- the.fulldata[sample(1:8928, 5000), ]
+
+# Save the sample data to a text file
+write.table(my.data, "RaviShankarJS-223296806-MelbAirSolarMyData.txt", row.names = FALSE, col.names = FALSE, sep = ",")
+```
+
+1.1) Histogram and box plot for the 'Wind speed' variable, and five-number summary:
+
+
+```{r}
+# Draw histogram
+hist(my.data[, 3], main = "Histogram of Wind Speed", xlab = "Wind Speed (km/h)")
+
+# Draw box plot
+boxplot(my.data[, 3], main = "Box Plot of Wind Speed", ylab = "Wind Speed (km/h)")
+
+# Five-number summary
+wind_speed_summary <- summary(my.data[, 3])
+print(wind_speed_summary)
+```
+
+1.2) Choosing summary statistics for center and spread of 'Wind speed':
+
+We could use the following data to summarise the "Wind speed" variable's centre and spread:
+Centre: The median, since it is a more reliable indicator of central tendency than the mean and is less impacted by outliers.
+Spread: Interquartile range (IQR), as opposed to standard deviation, it offers a measure of the spread that is also resistant to outliers.
+The IQR provides information about the typical range of the data, which is helpful in understanding the variability in the wind speed measurements, while the median provides the central value.
+
+1.3) Scatterplot, linear regression, correlation, and coefficient of determination:
+
+```{r}
+# Scatterplot of Temperature vs. Humidity
+plot(my.data[, 2], my.data[, 4], xlab = "Temperature (°C)", ylab = "Humidity (%)")
+
+# Fit linear regression model
+lm_model <- lm(my.data[, 4] ~ my.data[, 2])
+abline(lm_model, col = "red")
+
+# Print linear regression equation
+print(summary(lm_model)$coefficients)
+
+# Compute correlation coefficient and coefficient of determination
+corr_coef <- cor(my.data[, 2], my.data[, 4])
+r_squared <- summary(lm_model)$r.squared
+
+cat("Linear regression equation:", lm_model$coefficients[1], "+", lm_model$coefficients[2], "* Temperature\n")
+cat("Correlation coefficient:", corr_coef, "\n")
+cat("Coefficient of determination (R-squared):", r_squared, "\n")
+```
+
+1.4) Constructing cross-tabulation and answering probability-related questions:
+
+a) Construct the cross-tabulation:
+
+```{r}
+# Create new variables
+WSB <- ifelse(my.data[, 3] > 25, "High", "Low")
+TB <- cut(my.data[, 2], breaks = c(-Inf, 20, 30, Inf), labels = c("Low", "Moderate", "High"))
+IrrB <- ifelse(my.data[, 1] > 800, "High", "Low")
+
+# Construct cross-tabulation
+cross_tab <- table(WSB, TB, IrrB)
+print(cross_tab)
+```
+
+b) Use the above obtained cross table to answer the following questions. Show all the steps/workings clearly.
+Consider that a record (row) is selected from the data at random,
+i) what is the probability that the IrrB is High?
+
+```{r}
+# Calculate the total number of observations where IrrB is High
+irr_high_count <- sum(cross_tab[, , "High"])
+
+# Calculate the total number of observations
+total_count <- sum(cross_tab)
+
+# Calculate the probability that IrrB is High
+prob_irr_high <- irr_high_count / total_count
+
+cat("Probability that IrrB is High:", prob_irr_high, "\n")
+```
+
+ii) what is the probability that the TB is high given that the WSB is low?
+
+```{r}
+# Calculate the number of observations where TB is High and WSB is Low
+tb_high_ws_low_count <- cross_tab["Low", "High", ]
+
+# Calculate the total number of observations where WSB is Low
+ws_low_count <- sum(cross_tab["Low", , ])
+
+# Calculate the probability that TB is High given that WSB is Low
+prob_tb_high_given_ws_low <- tb_high_ws_low_count / ws_low_count
+
+cat("Probability that TB is High given that WSB is Low:", prob_tb_high_given_ws_low, "\n")
+```
+
+iii) what is the probability that the IrrB is low given that the TB is moderate and the WSB is low?
+
+```{r}
+# Calculate the number of observations where IrrB is Low, TB is Moderate, and WSB is Low
+irr_low_tb_mod_ws_low_count <- cross_tab["Low", "Moderate", "Low"]
+
+# Calculate the total number of observations where TB is Moderate and WSB is Low
+tb_mod_ws_low_count <- sum(cross_tab["Low", "Moderate", ])
+
+# Calculate the probability that IrrB is Low given that TB is Moderate and WSB is Low
+prob_irr_low_given_tb_mod_ws_low <- irr_low_tb_mod_ws_low_count / tb_mod_ws_low_count
+
+cat("Probability that IrrB is Low given that TB is Moderate and WSB is Low:", prob_irr_low_given_tb_mod_ws_low, "\n")
+```
+
+
+iv) Are high TB and low IrrB independent events? Explain.
+
+```{r}
+# Compute joint probabilities
+joint_prob <- prop.table(cross_tab)
+
+# Compute marginal probabilities
+prob_tb_high <- sum(joint_prob[, "High", ])
+prob_irr_low <- sum(joint_prob[, , "Low"])
+
+# Compute expected joint probability under independence
+expected_joint_prob <- prob_tb_high * prob_irr_low
+
+# Compare observed and expected joint probabilities
+observed_joint_prob <- joint_prob["High", "Low", "Low"]
+
+if (abs(observed_joint_prob - expected_joint_prob) > 0.05) {
+  cat("High TB and Low IrrB are not independent events.\n")
+} else {
+  cat("High TB and Low IrrB are independent events.\n")
+}
+```
+
+
+v) Are low TB and high WSB mutually exclusive? Explain.
+
+```{r}
+# Check if there are any observations with both Low TB and High WSB
+# Check if there are any observations with both Low TB and High WSB
+if (sum(cross_tab["High", "Low", ]) == 0) {
+  cat("Low TB and High WSB are mutually exclusive events.\n")
+} else {
+  cat("Low TB and High WSB are not mutually exclusive events.\n")
+}
+```
+
+Q3)
+
+Q3.2)
+
+(C)
+
+```{r}
+# Load the required packages
+library(ggplot2)
+library(patchwork)
+
+# Define the parameters
+a <- 0.5  # Prior hyperparameter
+b <- 10   # Prior hyperparameter
+N <- 6    # Number of observations
+x <- c(10, 12, 15, 20, 15, 20) # Observed dwell times
+
+# Compute the posterior hyperparameters
+a_posterior <- a + N
+b_posterior <- b + sum(x)
+
+# Create a grid of values for x (dwell time)
+x_grid <- seq(min(x), max(x), length.out = 100)
+
+# Calculate the likelihood, prior, and posterior distributions
+likelihood <- dexp(x_grid, rate = 1/mean(x))
+prior <- 1 / (dgamma(1/x_grid, shape = a, rate = 1/b))
+posterior <- 1 / (dgamma(1/x_grid, shape = a_posterior, rate = 1/b_posterior))
+
+# Create the plots
+p1 <- ggplot() +
+  geom_line(aes(x_grid, likelihood), color = "blue", linewidth = 1) +
+  labs(x = "Dwell Time", y = "Density", title = "Likelihood Distribution")
+
+p2 <- ggplot() +
+  geom_line(aes(x_grid, prior), color = "red", linewidth = 1) +
+  labs(x = "Dwell Time", y = "Density", title = "Prior Distribution")
+
+p3 <- ggplot() +
+  geom_line(aes(x_grid, posterior), color = "green", linewidth = 1) +
+  labs(x = "Dwell Time", y = "Density", title = "Posterior Distribution")
+
+# Combine the plots
+(p1 | p2) / p3
+```
+
+Q4)
+
+(C)
+
+```{r}
+# Define the prior distribution function
+prior_distribution <- function(theta) {
+  p <- 0
+  if (theta >= 50 & theta <= 150) {
+    p <- 1 / (45000 * (150 - 50))
+  } else if (theta > 150 & theta <= 200) {
+    p <- 1 / (90000 * (200 - 150))
+  } else if (theta > 200 & theta <= 250) {
+    p <- 1 / (30000 * (250 - 200))
+  } else {
+    p <- 0
+  }
+  return(p)
+}
+
+# Compute the posterior distribution
+n <- 1
+mean_prior <- 150
+sigma_prior <- 20
+
+# Likelihood function (normal distribution with known variance)
+likelihood <- function(theta, y) {
+  sigma <- 10
+  return(dnorm(y, theta, sigma))
+}
+
+# Posterior distribution
+posterior_distribution <- function(theta, y) {
+  return(likelihood(theta, y) * prior_distribution(theta))
+}
+
+# Compute the posterior mean and standard deviation
+y <- 160 # Observed mean height
+theta_grid <- seq(50, 250, length.out = 1000)
+posterior <- sapply(theta_grid, function(x) posterior_distribution(x, y))
+posterior_mean <- sum(theta_grid * posterior) / sum(posterior)
+posterior_var <- sum((theta_grid - posterior_mean)^2 * posterior) / sum(posterior)
+posterior_sd <- sqrt(posterior_var)
+
+cat("Posterior mean:", posterior_mean, "\n")
+cat("Posterior standard deviation:", posterior_sd, "\n")
+
+# Plot the prior distribution
+prior_values <- sapply(theta_grid, prior_distribution)
+plot(theta_grid, prior_values, type = "l", xlab = "theta", ylab = "Density", main = "Prior Distribution")
+
+# Plot the likelihood function
+likelihood_values <- sapply(theta_grid, function(x) likelihood(x, y))
+plot(theta_grid, likelihood_values, type = "l", xlab = "theta", ylab = "Density", main = "Likelihood Function")
+
+# Plot the posterior distribution
+plot(theta_grid, posterior, type = "l", xlab = "theta", ylab = "Density", main = "Posterior Distribution")
+```
+
+Q5)
+
+```{r}
+# Load the data
+zz <- read.table("lettersdata.txt")
+zz <- as.matrix(zz)
+
+# 5.1a) Draw a scatterplot and visually examine the number of clusters
+plot(zz, pch = 20, xlab = "X", ylab = "Y")
+# By visually examining the scatterplot, there appear to be around 4-5 clusters in the data.
+
+# 5.1b) Perform k-means clustering with k = 4 (assuming 4 clusters from visual inspection)
+set.seed(123)  # Set a seed for reproducibility
+km_result <- kmeans(zz, centers = 4)
+cluster_colors <- c("black", "red", "green", "blue")
+plot(zz, col = cluster_colors[km_result$cluster], pch = 20, xlab = "X", ylab = "Y", main = "K-Means Clustering (k = 4)")
+legend("topright", legend = paste("Cluster", 1:4), col = cluster_colors, pch = 20)
+# The k-means algorithm has identified 4 clusters in the data, with some overlapping regions.
+
+# 5.1c) Vary k from 2 to 20, record TOTWSS, and plot TOTWSS vs. k
+set.seed(123)  # Set a seed for reproducibility
+totwss <- numeric(19)
+for (k in 2:20) {
+  km_result <- kmeans(zz, centers = k)
+  totwss[k - 1] <- km_result$tot.withinss
+}
+plot(2:20, totwss, type = "b", xlab = "Number of Clusters (k)", ylab = "Total Within Sum of Squares (TOTWSS)")
+# The TOTWSS vs. k plot can be used to determine the optimal number of clusters by looking for an "elbow" or a point where the decrease in TOTWSS starts to level off. This typically indicates the appropriate number of clusters.
+
+# 5.2) Perform spectral clustering with k = 4
+library(kernlab)
+sc_result <- specc(zz, centers = 4)
+# Extract cluster assignments
+sc_clusters <- sc_result@.Data
+# Plot the results
+plot(zz, col = sc_clusters + 1, pch = 20, xlab = "X", ylab = "Y", main = "Spectral Clustering (k = 4)")
+legend("topright", legend = paste("Cluster", 1:4), col = 1:4, pch = 20)
+# Spectral clustering also identifies 4 clusters in the data, but the cluster assignments may differ from k-means.
+# Comparing the two plots, we can observe the differences in cluster assignments between k-means and spectral clustering.
+```
+
